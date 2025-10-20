@@ -10,10 +10,21 @@ using System.Text;
 
 namespace Denomica.OData
 {
-    using EntityTypeConfiguratorHandler = Action<ODataModelBuilder, EntityTypeConfiguration>;
-
+    /// <summary>
+    /// Provides functionality to build an Entity Data Model (EDM) for use with OData services.
+    /// </summary>
+    /// <remarks>The <see cref="EdmModelBuilder"/> class allows you to define entity types, entity sets, and
+    /// entity keys to construct an EDM model. This model can then be used to configure OData endpoints or other
+    /// services that rely on EDM-based metadata.  Use the provided methods to add entity types, specify keys, and
+    /// define entity sets. Once the model is fully configured, call <see cref="Build"/> to generate the final <see
+    /// cref="IEdmModel"/>.</remarks>
     public class EdmModelBuilder
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EdmModelBuilder"/> class with the specified options.
+        /// </summary>
+        /// <param name="options">The options to configure the behavior of the <see cref="EdmModelBuilder"/>. If null, default options are
+        /// used.</param>
         public EdmModelBuilder(EdmModelBuilderOptions? options = null)
         {
             this.Options = options ?? new EdmModelBuilderOptions();
@@ -21,52 +32,105 @@ namespace Denomica.OData
 
         private EdmModelBuilderOptions Options = new EdmModelBuilderOptions();
         private List<Type> EntityTypes = new List<Type>();
-        private Dictionary<Type, string> EntitySets = new Dictionary<Type, string>();
+        private Dictionary<Type, string> UriSegments = new Dictionary<Type, string>();
         private Dictionary<Type, List<string>> EntityKeys = new Dictionary<Type, List<string>>();
 
-        public EdmModelBuilder AddEntityKey<TEntity>(string propertyName)
+
+        /// <summary>
+        /// Adds a key property to the entity type specified by <typeparamref name="TEntity"/>.
+        /// </summary>
+        /// <typeparam name="TEntity">The type of the entity to which the key property belongs.</typeparam>
+        /// <param name="keyPropertyName">The name of the property to designate as the key for the entity type.</param>
+        public EdmModelBuilder AddEntityKey<TEntity>(string keyPropertyName)
         {
-            return this.AddEntityKey(typeof(TEntity), propertyName);
+            return this.AddEntityKey(typeof(TEntity), keyPropertyName);
         }
 
-        public EdmModelBuilder AddEntityKey(Type entityType, string propertyName)
+        /// <summary>
+        /// Adds a key property to the specified entity type in the model.
+        /// </summary>
+        /// <remarks>If the specified entity type does not already have keys defined, a new key collection
+        /// is created.</remarks>
+        /// <param name="entityType">The type of the entity to which the key property belongs.</param>
+        /// <param name="keyPropertyName">The name of the property to be added as a key for the entity.</param>
+        public EdmModelBuilder AddEntityKey(Type entityType, string keyPropertyName)
         {
             if(!this.EntityKeys.ContainsKey(entityType))
             {
                 this.EntityKeys[entityType] = new List<string>();
             }
 
-            this.EntityKeys[entityType].Add(propertyName);
+            this.EntityKeys[entityType].Add(keyPropertyName);
             return this;
         }
 
-        public EdmModelBuilder AddEntitySet<TEntity>(string name)
+        /// <summary>
+        /// Adds a URI segment associated with the specified entity type.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The URI segment is the part of the URI that represents the set of entities that an OData URI targets.
+        /// </para>
+        /// <para>
+        /// So for instance, if you have an entity of type <c>Employee</c>, that entity would most likely be
+        /// represneted by the URI segment <c>employees</c>.
+        /// </para>
+        /// </remarks>
+        /// <typeparam name="TEntity">The type of the entity to associate with the URI segment.</typeparam>
+        /// <param name="segment">The URI segment to add. Cannot be null or empty.</param>
+        public EdmModelBuilder AddUriSegment<TEntity>(string segment)
         {
-            return this.AddEntitySet(typeof(TEntity), name);
+            return this.AddUriSegment(typeof(TEntity), segment);
         }
 
-        public EdmModelBuilder AddEntitySet(Type entityType, string name)
+        /// <summary>
+        /// Adds a URI segment associated the specified entity type.
+        /// </summary>
+        /// <param name="entityType">The type of the entity for which the URI segment is being defined.</param>
+        /// <param name="segment">The URI segment to associate with the specified entity type. Cannot be null or empty.</param>
+        public EdmModelBuilder AddUriSegment(Type entityType, string segment)
         {
-            this.EntitySets[entityType] = name;
+            this.UriSegments[entityType] = segment;
             return this;
         }
 
-        public EdmModelBuilder AddEntityType<TEntity>(string? keyPropertyName = null, string? entitySetName = null)
+        /// <summary>
+        /// Adds an entity type to the model and optionally configures its key property and URI segment.
+        /// </summary>
+        /// <remarks>This method adds the specified entity type to the model. If a key property name is
+        /// provided, it is configured as the entity's key. If a URI segment is provided, it is associated with the
+        /// entity for use in URI generation.</remarks>
+        /// <typeparam name="TEntity">The type of the entity to add to the model.</typeparam>
+        /// <param name="keyPropertyName">The name of the property to use as the key for the entity. If null or empty, no key property is configured.</param>
+        /// <param name="uriSegment">The URI segment to associate with the entity. If null or empty, no URI segment is configured.</param>
+        /// <returns>The current <see cref="EdmModelBuilder"/> instance, allowing for method chaining.</returns>
+        public EdmModelBuilder AddEntity<TEntity>(string? keyPropertyName = null, string? uriSegment = null)
         {
-            this.AddEntityType(typeof(TEntity));
+            this.AddEntity(typeof(TEntity));
             if(keyPropertyName?.Length > 0)
             {
                 this.AddEntityKey<TEntity>(keyPropertyName);
             }
-            if(entitySetName?.Length > 0)
+            if(uriSegment?.Length > 0)
             {
-                this.AddEntitySet<TEntity>(entitySetName);
+                this.AddUriSegment<TEntity>(uriSegment);
             }
 
             return this;
         }
 
-        public EdmModelBuilder AddEntityType(Type entityType, string? keyPropertyName = null, string? entitySetName = null)
+        /// <summary>
+        /// Adds an entity type to the model and optionally specifies its key property and URI segment.
+        /// </summary>
+        /// <remarks>If the specified entity type is not already part of the model, it is added.  If a key
+        /// property name is provided, it is set as the key for the entity type.  Similarly, if a URI segment is
+        /// provided, it is associated with the entity type.</remarks>
+        /// <param name="entityType">The <see cref="Type"/> representing the entity to add to the model.</param>
+        /// <param name="keyPropertyName">The name of the property to use as the key for the entity.  If null or empty, no key property is explicitly
+        /// set.</param>
+        /// <param name="uriSegment">The URI segment to associate with the entity type.  If null or empty, no URI segment is explicitly set.</param>
+        /// <returns>The current <see cref="EdmModelBuilder"/> instance, allowing for method chaining.</returns>
+        public EdmModelBuilder AddEntity(Type entityType, string? keyPropertyName = null, string? uriSegment = null)
         {
             if (!this.EntityTypes.Contains(entityType))
             {
@@ -76,14 +140,21 @@ namespace Denomica.OData
             {
                 this.AddEntityKey(entityType, keyPropertyName);
             }
-            if (entitySetName?.Length > 0)
+            if (uriSegment?.Length > 0)
             {
-                this.AddEntitySet(entityType, entitySetName);
+                this.AddUriSegment(entityType, uriSegment);
             }
 
             return this;
         }
 
+        /// <summary>
+        /// Builds and returns an Entity Data Model (EDM) based on the configured entity types and URI segments.
+        /// </summary>
+        /// <remarks>This method iterates through the configured entity types, adds them to the OData
+        /// model builder,  and associates them with entity sets if corresponding URI segments are defined. The
+        /// resulting  EDM model can be used to define the structure of an OData service.</remarks>
+        /// <returns>An <see cref="IEdmModel"/> representing the constructed Entity Data Model.</returns>
         public IEdmModel Build()
         {
             var builder = new ODataModelBuilder();
@@ -92,9 +163,9 @@ namespace Denomica.OData
             foreach (var t in this.EntityTypes)
             {
                 var typeConfig = this.AddEntityType(builder, t);
-                if(this.EntitySets.ContainsKey(t))
+                if(this.UriSegments.ContainsKey(t))
                 {
-                    builder.AddEntitySet(this.EntitySets[t], typeConfig);
+                    builder.AddEntitySet(this.UriSegments[t], typeConfig);
                 }
             }
 

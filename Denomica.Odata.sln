@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Denomica.Odata", "Denomica.Odata\Denomica.Odata.csproj", "{7C31A4F6-E132-472E-BC3A-041778003CAD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Denomica.Odata.Tests", "Denomica.Odata.Tests\Denomica.Odata.Tests.csproj", "{3E120088-B5B6-42E9-83B4-D468B4CADA43}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,8 +29,23 @@ Global
 		{7C31A4F6-E132-472E-BC3A-041778003CAD}.Release|x64.Build.0 = Release|Any CPU
 		{7C31A4F6-E132-472E-BC3A-041778003CAD}.Release|x86.ActiveCfg = Release|Any CPU
 		{7C31A4F6-E132-472E-BC3A-041778003CAD}.Release|x86.Build.0 = Release|Any CPU
+		{3E120088-B5B6-42E9-83B4-D468B4CADA43}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3E120088-B5B6-42E9-83B4-D468B4CADA43}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3E120088-B5B6-42E9-83B4-D468B4CADA43}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3E120088-B5B6-42E9-83B4-D468B4CADA43}.Debug|x64.Build.0 = Debug|Any CPU
+		{3E120088-B5B6-42E9-83B4-D468B4CADA43}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3E120088-B5B6-42E9-83B4-D468B4CADA43}.Debug|x86.Build.0 = Debug|Any CPU
+		{3E120088-B5B6-42E9-83B4-D468B4CADA43}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3E120088-B5B6-42E9-83B4-D468B4CADA43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3E120088-B5B6-42E9-83B4-D468B4CADA43}.Release|x64.ActiveCfg = Release|Any CPU
+		{3E120088-B5B6-42E9-83B4-D468B4CADA43}.Release|x64.Build.0 = Release|Any CPU
+		{3E120088-B5B6-42E9-83B4-D468B4CADA43}.Release|x86.ActiveCfg = Release|Any CPU
+		{3E120088-B5B6-42E9-83B4-D468B4CADA43}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D5067A88-7F8C-467A-A2ED-1BAD6D4AD834}
 	EndGlobalSection
 EndGlobal
