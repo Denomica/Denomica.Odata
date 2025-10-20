@@ -14,7 +14,7 @@ namespace Denomica.OData
 
     public class EdmModelBuilder
     {
-        public EdmModelBuilder(EdmModelBuilderOptions options = null)
+        public EdmModelBuilder(EdmModelBuilderOptions? options = null)
         {
             this.Options = options ?? new EdmModelBuilderOptions();
         }
@@ -51,7 +51,7 @@ namespace Denomica.OData
             return this;
         }
 
-        public EdmModelBuilder AddEntityType<TEntity>(string keyPropertyName = null, string entitySetName = null)
+        public EdmModelBuilder AddEntityType<TEntity>(string? keyPropertyName = null, string? entitySetName = null)
         {
             this.AddEntityType(typeof(TEntity));
             if(keyPropertyName?.Length > 0)
@@ -66,7 +66,7 @@ namespace Denomica.OData
             return this;
         }
 
-        public EdmModelBuilder AddEntityType(Type entityType, string keyPropertyName = null, string entitySetName = null)
+        public EdmModelBuilder AddEntityType(Type entityType, string? keyPropertyName = null, string? entitySetName = null)
         {
             if (!this.EntityTypes.Contains(entityType))
             {
@@ -163,7 +163,7 @@ namespace Denomica.OData
             return configs;
         }
 
-        private string ModifyPropertyName(string name)
+        private string? ModifyPropertyName(string name)
         {
             if(name?.Length > 0 && this.Options.PropertyNaming.NamingPolicy == PropertyNamingPolicy.CamelCase)
             {

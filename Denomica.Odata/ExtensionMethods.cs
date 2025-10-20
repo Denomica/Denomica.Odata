@@ -95,12 +95,12 @@ namespace Denomica.OData
                 .CreateUriParser(uri);
         }
 
-        public static EdmEntityType FindEntityType<TEntity>(this IEdmModel model)
+        public static EdmEntityType? FindEntityType<TEntity>(this IEdmModel model)
         {
             return model.FindEntityType(typeof(TEntity));
         }
 
-        public static EdmEntityType FindEntityType(this IEdmModel model, Type type)
+        public static EdmEntityType? FindEntityType(this IEdmModel model, Type type)
         {
             return model.FindDeclaredType(type.FullName) as EdmEntityType;
         }
@@ -126,7 +126,7 @@ namespace Denomica.OData
             yield break;
         }
 
-        public static string ToCamelCase(this string s)
+        public static string? ToCamelCase(this string? s)
         {
             if(s?.Length > 1)
             {
