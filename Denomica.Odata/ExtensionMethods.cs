@@ -14,51 +14,41 @@ namespace Denomica.OData
     public static class ExtensionMethods
     {
 
-        public static Uri AppendFilter(this Uri uri, string filterExpression)
-        {
-            var parameters = HttpUtility.ParseQueryString(uri.Query);
-            var filter = parameters["$filter"];
-            if(filter?.Length > 0)
-            {
-                parameters["$filter"] = $"{filter} and {filterExpression}";
-            }
-            else
-            {
-                parameters["$filter"] = filterExpression;
-            }
-
-            var uriBuilder = new StringBuilder(uri.GetLeftPart(UriPartial.Path)).Append('?');
-            int keyCount = 0;
-            foreach(var key in parameters.AllKeys)
-            {
-                if (keyCount > 0) uriBuilder.Append('&');
-
-                uriBuilder.Append(key)
-                    .Append("=")
-                    .Append(parameters[key]);
-
-                keyCount++;
-            }
-
-            return new Uri(uriBuilder.ToString());
-        }
-
-        public static Uri AppendFilterIf(this Uri uri, string filterExpression, bool condition)
-        {
-            if(condition)
-            {
-                uri = uri.AppendFilter(filterExpression);
-            }
-
-            return uri;
-        }
-
+        /// <summary>
+        /// Creates an <see cref="ODataUriParser"/> for the specified URI using the provided <see cref="IEdmModel"/>.
+        /// </summary>
+        /// <param name="model">
+        /// The <see cref="IEdmModel"/> to use for parsing the URI. Cannot be <see langword="null"/>.
+        /// </param>
+        /// <param name="uri">
+        /// The URI to parse, specified as a string. Can be either relative or absolute.
+        /// </param>
+        /// <returns>
+        /// An <see cref="ODataUriParser"/> instance configured with the specified <paramref name="model"/> and
+        /// <paramref name="uri"/>.
+        /// </returns>
         public static ODataUriParser CreateUriParser(this IEdmModel model, string uri)
         {
             var u = new Uri(uri, UriKind.RelativeOrAbsolute);
             return model.CreateUriParser(u);
         }
 
+        /// <summary>
+        /// Creates an <see cref="ODataUriParser"/> for the specified <paramref name="uri"/> using the provided
+        /// <paramref name="model"/>.
+        /// </summary>
+        /// <param name="model">
+        /// The <see cref="IEdmModel"/> to use for parsing the OData URI.
+        /// </param>
+        /// <param name="uri">
+        /// The absolute URI to be parsed. The URI must include a path with at least one segment.
+        /// </param>
+        /// <returns>
+        /// An <see cref="ODataUriParser"/> instance configured to parse the specified <paramref name="uri"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown if the <paramref name="uri"/> does not specify a path with at least one segment.
+        /// </exception>
         public static ODataUriParser CreateUriParser(this IEdmModel model, Uri uri)
         {
             var u = uri.MakeAbsolute();
@@ -74,11 +64,25 @@ namespace Denomica.OData
             return new ODataUriParser(model, rootUri, u);
         }
 
+        /// <summary>
+        /// Creates an <see cref="ODataUriParser"/> instance for parsing the specified URI.
+        /// </summary>
+        /// <param name="builder">The <see cref="EdmModelBuilder"/> used to configure the OData model.</param>
+        /// <param name="uri">The URI to be parsed. Can be either relative or absolute.</param>
+        /// <returns>An <see cref="ODataUriParser"/> configured with the specified URI and the model from the <paramref
+        /// name="builder"/>.</returns>
         public static ODataUriParser CreateUriParser(this EdmModelBuilder builder, string uri)
         {
             return builder.CreateUriParser(new Uri(uri, UriKind.RelativeOrAbsolute));
         }
 
+        /// <summary>
+        /// Creates an <see cref="ODataUriParser"/> for the specified URI using the EDM model built by the <paramref
+        /// name="builder"/>.
+        /// </summary>
+        /// <param name="builder">The <see cref="EdmModelBuilder"/> used to construct the EDM model for parsing the URI.</param>
+        /// <param name="uri">The <see cref="Uri"/> to be parsed.</param>
+        /// <returns>An <see cref="ODataUriParser"/> configured with the EDM model built by the <paramref name="builder"/>.</returns>
         public static ODataUriParser CreateUriParser(this EdmModelBuilder builder, Uri uri)
         {
             return builder
