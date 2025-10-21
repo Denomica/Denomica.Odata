@@ -148,9 +148,8 @@ namespace Denomica.OData
 
             foreach (var t in this.EntityTypes.Keys)
             {
-                var typeConfig = this.AddEntityType(builder, t);
-
                 var et = this.EntityTypes[t];
+                var typeConfig = this.AddEntityType(builder, et);
                 if(et.EntitySet?.Length > 0)
                 {
                     builder.AddEntitySet(et.EntitySet, typeConfig);
@@ -162,38 +161,35 @@ namespace Denomica.OData
 
 
 
-        private EntityTypeConfiguration AddEntityType(ODataModelBuilder builder, Type entityType)
+        private EntityTypeConfiguration AddEntityType(ODataModelBuilder builder, EntityTypeDefinition entityTypeDef)
         {
-            var config = builder.AddEntityType(entityType);
+            var config = builder.AddEntityType(entityTypeDef.EntityType);
 
-            var et = this.EntityTypes.FirstOrDefault(x => x.Key == entityType).Value;
-            var baseType = et?.EntityType?.BaseType;
+            var baseType = entityTypeDef.EntityType.BaseType;
+            var baseTypeDef = null != baseType ? this.GetEntityTypeDefinitionOrCreateDefault(baseType) : null;
 
-            if(null != baseType)
+            if (null != baseTypeDef)
             {
-                var baseConfig = this.AddEntityType(builder, baseType);
+                var baseConfig = this.AddEntityType(builder, baseTypeDef);
                 config.BaseType = baseConfig;
             }
-            this.AddEntityProperties(builder, config, entityType);
 
-            if(null != et)
+            this.AddEntityProperties(builder, config, entityTypeDef.EntityType);
+
+            if(null != entityTypeDef)
             {
-                if(et.KeyProperties.Count == 0)
+                if(entityTypeDef.KeyProperties.Count == 0)
                 {
-                    // Try to find a property with [Key] attribute
-                    var keyProps = entityType.GetProperties()
-                        .Where(x => null != x.GetCustomAttribute<KeyAttribute>());
-
-                    foreach (var keyProp in keyProps)
+                    foreach (var keyProp in this.GetKeyProperties(entityTypeDef.EntityType))
                     {
-                        et.KeyProperties.Add(keyProp.Name);
+                        entityTypeDef.KeyProperties.Add(keyProp.Name);
                     }
                 }
 
-                foreach (var key in et.KeyProperties)
+                foreach (var key in entityTypeDef.KeyProperties)
                 {
-                    var prop = entityType.GetProperty(key);
-                    if (null != prop)
+                    var prop = entityTypeDef.EntityType.GetProperty(key);
+                    if (null != prop && (null == baseTypeDef || !baseTypeDef.KeyProperties.Contains(prop.Name)))
                     {
                         config.HasKey(prop);
                     }
@@ -238,20 +234,43 @@ namespace Denomica.OData
             return configs;
         }
 
+        private EntityTypeDefinition CreateEntityTypeDefinition(Type entityType)
+        {
+            var et = new EntityTypeDefinition
+            {
+                EntityType = entityType,
+                EntitySet = entityType.Name.Pluralize().ToLower()
+            };
+
+            return et;
+        }
+
         private EntityTypeDefinition EnsureEntityTypeDefinition(Type entityType)
         {
             if (!this.EntityTypes.ContainsKey(entityType))
             {
-                this.EntityTypes[entityType] = new EntityTypeDefinition
-                {
-                    EntityType = entityType,
-                    EntitySet = entityType.Name.Pluralize().ToLower()
-                };
+                this.EntityTypes[entityType] = this.CreateEntityTypeDefinition(entityType);
             }
 
             return this.EntityTypes[entityType];
         }
 
+        private EntityTypeDefinition GetEntityTypeDefinitionOrCreateDefault(Type entityType)
+        {
+            if(this.EntityTypes.ContainsKey(entityType))
+            {
+                return this.EntityTypes[entityType];
+            }
+
+            return this.CreateEntityTypeDefinition(entityType);
+        }
+
+        private IEnumerable<PropertyInfo> GetKeyProperties(Type entityType)
+        {
+            var keyProps = entityType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(x => null != x.GetCustomAttribute<KeyAttribute>());
+            return keyProps;
+        }
         private string? ModifyPropertyName(string name)
         {
             if(name?.Length > 0 && this.Options.PropertyNaming.NamingPolicy == PropertyNamingPolicy.CamelCase)
@@ -270,6 +289,11 @@ namespace Denomica.OData
             public string EntitySet { get; set; } = null!;
 
             public List<string> KeyProperties { get; set; } = new List<string>();
+
+            public override string ToString()
+            {
+                return this.EntityType.FullName ?? base.ToString() ?? string.Empty;
+            }
         }
     }
 }

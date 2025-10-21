@@ -97,8 +97,8 @@ namespace Denomica.OData
             var u = uri;
             if(!uri.IsAbsoluteUri)
             {
-                var pathPrefix = uri.OriginalString.StartsWith("/") ? "/" : "";
-                u = new Uri($"{scheme}://{host}{pathPrefix}{uri.OriginalString}");
+                var baseUri = new Uri($"{scheme}://{host}");
+                u = new Uri(baseUri, uri);
             }
 
             return u;
