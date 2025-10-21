@@ -14,6 +14,10 @@ Please refer to the [project repository](https://github.com/Denomica/Denomica.Od
 
 ## Version History
 
+### v1.0.0
+
+Initial stable release with core OData functionalities.
+
 ### v1.0.0-beta.x
 
 Preliminary versions while building towards a stable release.
