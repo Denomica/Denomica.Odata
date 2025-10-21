@@ -112,6 +112,61 @@ namespace Denomica.OData
             return null;
         }
 
+        /// <summary>
+        /// Retrieves the identifiers of the selected paths from the specified <see cref="SelectExpandClause"/>.
+        /// </summary>
+        /// <remarks>This method iterates through the selected items in the <see
+        /// cref="SelectExpandClause"/> and extracts the identifiers of paths that are explicitly selected. It skips
+        /// items that are not of type <see cref="PathSelectItem"/>.</remarks>
+        /// <param name="clause">The <see cref="SelectExpandClause"/> containing the selected items. Cannot be null.</param>
+        /// <returns>An enumerable collection of strings representing the identifiers of the selected paths. If <paramref
+        /// name="clause"/> is null or all items are selected, the collection will be empty.</returns>
+        public static IEnumerable<string> SelectedPathIdentifiers(this SelectExpandClause clause)
+        {
+            if (null != clause && !clause.AllSelected)
+            {
+                foreach (var path in from x in clause.SelectedItems where x is PathSelectItem select (PathSelectItem)x)
+                {
+                    foreach (var selectedPath in path.SelectedPath)
+                    {
+                        yield return selectedPath.Identifier;
+                    }
+                }
+            }
+
+            yield break;
+        }
+
+        /// <summary>
+        /// Converts the specified <see cref="OrderByClause"/> into a list of tuples, where each tuple contains a <see
+        /// cref="SingleValuePropertyAccessNode"/> and its corresponding <see cref="OrderByDirection"/>.
+        /// </summary>
+        /// <remarks>The method traverses the <see cref="OrderByClause"/> chain, starting from the
+        /// specified clause, and collects all segments into the resulting list. The list is ordered from the outermost
+        /// clause to the innermost clause.</remarks>
+        /// <param name="clause">The <see cref="OrderByClause"/> to convert. Must not be <c>null</c>.</param>
+        /// <returns>A list of tuples, where each tuple represents an <see cref="OrderByClause"/> segment. The first item in the
+        /// tuple is the <see cref="SingleValuePropertyAccessNode"/> representing the property being ordered, and the
+        /// second item is the <see cref="OrderByDirection"/> indicating the sort direction.</returns>
+        public static IList<Tuple<SingleValuePropertyAccessNode, OrderByDirection>> ToList(this OrderByClause clause)
+        {
+            var list = new List<Tuple<SingleValuePropertyAccessNode, OrderByDirection>>();
+
+            var parent = clause;
+
+            while (null != parent)
+            {
+                if (parent.Expression is SingleValuePropertyAccessNode)
+                {
+                    list.Add(new Tuple<SingleValuePropertyAccessNode, OrderByDirection>((SingleValuePropertyAccessNode)parent.Expression, parent.Direction));
+                }
+
+                parent = parent.ThenBy;
+            }
+
+            return list;
+        }
+
 
         private static Uri MakeAbsolute(this Uri uri, string scheme = "odata", string host = "host")
         {
