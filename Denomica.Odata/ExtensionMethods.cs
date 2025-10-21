@@ -74,21 +74,13 @@ namespace Denomica.OData
             return new ODataUriParser(model, rootUri, u);
         }
 
-        public static ODataUriParser CreateUriParser<TEntity>(this EdmModelBuilder builder, string uri)
+        public static ODataUriParser CreateUriParser(this EdmModelBuilder builder, string uri)
         {
-            return builder.CreateUriParser<TEntity>(new Uri(uri, UriKind.RelativeOrAbsolute));
+            return builder.CreateUriParser(new Uri(uri, UriKind.RelativeOrAbsolute));
         }
 
-        public static ODataUriParser CreateUriParser<TEntity>(this EdmModelBuilder builder, Uri uri)
+        public static ODataUriParser CreateUriParser(this EdmModelBuilder builder, Uri uri)
         {
-            var u = uri.MakeAbsolute();
-            var path = u.OriginalString.Contains('?') ? u.OriginalString.Substring(0, u.OriginalString.IndexOf('?')) : u.OriginalString;
-            var segments = path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
-            if(segments.Length > 1)
-            {
-                builder.AddUriSegment<TEntity>(segments.Last());
-            }
-
             return builder
                 .Build()
                 .CreateUriParser(uri);

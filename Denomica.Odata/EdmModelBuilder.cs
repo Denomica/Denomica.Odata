@@ -1,8 +1,11 @@
 ﻿
+using Humanizer;
 using Microsoft.OData.Edm;
 using Microsoft.OData.ModelBuilder;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -31,66 +34,61 @@ namespace Denomica.OData
         }
 
         private EdmModelBuilderOptions Options = new EdmModelBuilderOptions();
-        private List<Type> EntityTypes = new List<Type>();
-        private Dictionary<Type, string> UriSegments = new Dictionary<Type, string>();
-        private Dictionary<Type, List<string>> EntityKeys = new Dictionary<Type, List<string>>();
+        private Dictionary<Type, EntityTypeDefinition> EntityTypes = new Dictionary<Type, EntityTypeDefinition>();
 
 
         /// <summary>
         /// Adds a key property to the entity type specified by <typeparamref name="TEntity"/>.
         /// </summary>
+        /// <remarks>
+        /// If the entity type does not exist in the model, it will be added.
+        /// </remarks>
         /// <typeparam name="TEntity">The type of the entity to which the key property belongs.</typeparam>
         /// <param name="keyPropertyName">The name of the property to designate as the key for the entity type.</param>
         public EdmModelBuilder AddEntityKey<TEntity>(string keyPropertyName)
         {
-            return this.AddEntityKey(typeof(TEntity), keyPropertyName);
+            return this.AddEntityKey(typeof(TEntity), keyPropertyName: keyPropertyName);
         }
 
         /// <summary>
         /// Adds a key property to the specified entity type in the model.
         /// </summary>
-        /// <remarks>If the specified entity type does not already have keys defined, a new key collection
-        /// is created.</remarks>
+        /// <remarks>
+        /// If the entity type does not exist in the model, it will be added.
+        /// </remarks>
         /// <param name="entityType">The type of the entity to which the key property belongs.</param>
         /// <param name="keyPropertyName">The name of the property to be added as a key for the entity.</param>
         public EdmModelBuilder AddEntityKey(Type entityType, string keyPropertyName)
         {
-            if(!this.EntityKeys.ContainsKey(entityType))
+            var et = this.EnsureEntityTypeDefinition(entityType);
+            if (!et.KeyProperties.Contains(keyPropertyName))
             {
-                this.EntityKeys[entityType] = new List<string>();
+                et.KeyProperties.Add(keyPropertyName);
             }
 
-            this.EntityKeys[entityType].Add(keyPropertyName);
             return this;
         }
 
         /// <summary>
-        /// Adds a URI segment associated with the specified entity type.
+        /// Configures the entity set name for the specified entity type.
         /// </summary>
-        /// <remarks>
-        /// <para>
-        /// The URI segment is the part of the URI that represents the set of entities that an OData URI targets.
-        /// </para>
-        /// <para>
-        /// So for instance, if you have an entity of type <c>Employee</c>, that entity would most likely be
-        /// represneted by the URI segment <c>employees</c>.
-        /// </para>
-        /// </remarks>
-        /// <typeparam name="TEntity">The type of the entity to associate with the URI segment.</typeparam>
-        /// <param name="segment">The URI segment to add. Cannot be null or empty.</param>
-        public EdmModelBuilder AddUriSegment<TEntity>(string segment)
+        /// <typeparam name="TEntity">The type of the entity to associate with the entity set.</typeparam>
+        /// <param name="entitySet">The name of the entity set to associate with the entity type. Cannot be null or empty.</param>
+        public EdmModelBuilder SetEntitySet<TEntity>(string entitySet)
         {
-            return this.AddUriSegment(typeof(TEntity), segment);
+            return this.SetEntitySet(typeof(TEntity), entitySet);
         }
 
         /// <summary>
-        /// Adds a URI segment associated the specified entity type.
+        /// Configures the entity set name for the specified entity type.
         /// </summary>
-        /// <param name="entityType">The type of the entity for which the URI segment is being defined.</param>
-        /// <param name="segment">The URI segment to associate with the specified entity type. Cannot be null or empty.</param>
-        public EdmModelBuilder AddUriSegment(Type entityType, string segment)
+        /// <param name="entityType">The <see cref="Type"/> representing the entity for which the entity set is being configured.</param>
+        /// <param name="entitySet">The name of the entity set to associate with the specified entity type. Cannot be null or empty.</param>
+        public EdmModelBuilder SetEntitySet(Type entityType, string entitySet)
         {
-            this.UriSegments[entityType] = segment;
+            var et = this.EnsureEntityTypeDefinition(entityType);
+            et.EntitySet = entitySet;
+
             return this;
         }
 
@@ -102,21 +100,10 @@ namespace Denomica.OData
         /// entity for use in URI generation.</remarks>
         /// <typeparam name="TEntity">The type of the entity to add to the model.</typeparam>
         /// <param name="keyPropertyName">The name of the property to use as the key for the entity. If null or empty, no key property is configured.</param>
-        /// <param name="uriSegment">The URI segment to associate with the entity. If null or empty, no URI segment is configured.</param>
-        /// <returns>The current <see cref="EdmModelBuilder"/> instance, allowing for method chaining.</returns>
-        public EdmModelBuilder AddEntity<TEntity>(string? keyPropertyName = null, string? uriSegment = null)
+        /// <param name="entitySet">The entity set name associated with the entity type.</param>
+        public EdmModelBuilder AddEntity<TEntity>(string? keyPropertyName = null, string? entitySet = null)
         {
-            this.AddEntity(typeof(TEntity));
-            if(keyPropertyName?.Length > 0)
-            {
-                this.AddEntityKey<TEntity>(keyPropertyName);
-            }
-            if(uriSegment?.Length > 0)
-            {
-                this.AddUriSegment<TEntity>(uriSegment);
-            }
-
-            return this;
+            return this.AddEntity(typeof(TEntity), keyPropertyName: keyPropertyName, uriSegment: entitySet);
         }
 
         /// <summary>
@@ -126,23 +113,22 @@ namespace Denomica.OData
         /// property name is provided, it is set as the key for the entity type.  Similarly, if a URI segment is
         /// provided, it is associated with the entity type.</remarks>
         /// <param name="entityType">The <see cref="Type"/> representing the entity to add to the model.</param>
-        /// <param name="keyPropertyName">The name of the property to use as the key for the entity.  If null or empty, no key property is explicitly
-        /// set.</param>
-        /// <param name="uriSegment">The URI segment to associate with the entity type.  If null or empty, no URI segment is explicitly set.</param>
-        /// <returns>The current <see cref="EdmModelBuilder"/> instance, allowing for method chaining.</returns>
+        /// <param name="keyPropertyName">
+        /// The name of the property to use as the key for the entity.  If null or empty, no key 
+        /// property is explicitly set.
+        /// </param>
+        /// <param name="entitySet">The entity set name associated with the entity type.</param>
         public EdmModelBuilder AddEntity(Type entityType, string? keyPropertyName = null, string? uriSegment = null)
         {
-            if (!this.EntityTypes.Contains(entityType))
-            {
-                this.EntityTypes.Add(entityType);
-            }
+            var et = this.EnsureEntityTypeDefinition(entityType);
+
             if(keyPropertyName?.Length > 0)
             {
                 this.AddEntityKey(entityType, keyPropertyName);
             }
             if (uriSegment?.Length > 0)
             {
-                this.AddUriSegment(entityType, uriSegment);
+                this.SetEntitySet(entityType, uriSegment);
             }
 
             return this;
@@ -160,12 +146,14 @@ namespace Denomica.OData
             var builder = new ODataModelBuilder();
 
 
-            foreach (var t in this.EntityTypes)
+            foreach (var t in this.EntityTypes.Keys)
             {
                 var typeConfig = this.AddEntityType(builder, t);
-                if(this.UriSegments.ContainsKey(t))
+
+                var et = this.EntityTypes[t];
+                if(et.EntitySet?.Length > 0)
                 {
-                    builder.AddEntitySet(this.UriSegments[t], typeConfig);
+                    builder.AddEntitySet(et.EntitySet, typeConfig);
                 }
             }
 
@@ -177,7 +165,10 @@ namespace Denomica.OData
         private EntityTypeConfiguration AddEntityType(ODataModelBuilder builder, Type entityType)
         {
             var config = builder.AddEntityType(entityType);
-            var baseType = this.EntityTypes.FirstOrDefault(x => x == entityType.BaseType);
+
+            var et = this.EntityTypes.FirstOrDefault(x => x.Key == entityType).Value;
+            var baseType = et?.EntityType?.BaseType;
+
             if(null != baseType)
             {
                 var baseConfig = this.AddEntityType(builder, baseType);
@@ -185,17 +176,30 @@ namespace Denomica.OData
             }
             this.AddEntityProperties(builder, config, entityType);
 
-            if(this.EntityKeys.ContainsKey(entityType))
+            if(null != et)
             {
-                foreach(var propertyName in this.EntityKeys[entityType])
+                if(et.KeyProperties.Count == 0)
                 {
-                    var prop = entityType.GetProperty(propertyName);
-                    if(null != prop)
+                    // Try to find a property with [Key] attribute
+                    var keyProps = entityType.GetProperties()
+                        .Where(x => null != x.GetCustomAttribute<KeyAttribute>());
+
+                    foreach (var keyProp in keyProps)
+                    {
+                        et.KeyProperties.Add(keyProp.Name);
+                    }
+                }
+
+                foreach (var key in et.KeyProperties)
+                {
+                    var prop = entityType.GetProperty(key);
+                    if (null != prop)
                     {
                         config.HasKey(prop);
                     }
                 }
             }
+
             return config;
         }
 
@@ -222,7 +226,7 @@ namespace Denomica.OData
             }
 
             var complexProps = from x in entityType.GetProperties(flags)
-                               where this.EntityTypes.Contains(x.PropertyType)
+                               where this.EntityTypes.Keys.Contains(x.PropertyType)
                                select x;
             foreach(var p in complexProps)
             {
@@ -234,6 +238,20 @@ namespace Denomica.OData
             return configs;
         }
 
+        private EntityTypeDefinition EnsureEntityTypeDefinition(Type entityType)
+        {
+            if (!this.EntityTypes.ContainsKey(entityType))
+            {
+                this.EntityTypes[entityType] = new EntityTypeDefinition
+                {
+                    EntityType = entityType,
+                    EntitySet = entityType.Name.Pluralize().ToLower()
+                };
+            }
+
+            return this.EntityTypes[entityType];
+        }
+
         private string? ModifyPropertyName(string name)
         {
             if(name?.Length > 0 && this.Options.PropertyNaming.NamingPolicy == PropertyNamingPolicy.CamelCase)
@@ -242,6 +260,16 @@ namespace Denomica.OData
             }
 
             return name;
+        }
+
+
+        private class EntityTypeDefinition
+        {
+            public Type EntityType { get; set; } = null!;
+
+            public string EntitySet { get; set; } = null!;
+
+            public List<string> KeyProperties { get; set; } = new List<string>();
         }
     }
 }
