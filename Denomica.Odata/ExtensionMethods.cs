@@ -90,6 +90,27 @@ namespace Denomica.OData
                 .CreateUriParser(uri);
         }
 
+        /// <summary>
+        /// Retrieves the last segment of the parsed OData URI path as a <see cref="KeySegment"/>.
+        /// </summary>
+        /// <param name="parser">The <see cref="ODataUriParser"/> instance used to parse the OData URI.</param>
+        /// <returns>The last segment of the parsed OData URI path as a <see cref="KeySegment"/>, or <see langword="null"/>  if
+        /// the path is empty, the last segment is not a <see cref="KeySegment"/>, or the parser is unable to parse the
+        /// path.</returns>
+        public static KeySegment? GetKeySegment(this ODataUriParser parser)
+        {
+            var path = parser.ParsePath();
+            if(null != path)
+            {
+                var keySegment = path.LastSegment as KeySegment;
+                if(null != keySegment)
+                {
+                    return keySegment;
+                }
+            }
+
+            return null;
+        }
 
 
         private static Uri MakeAbsolute(this Uri uri, string scheme = "odata", string host = "host")

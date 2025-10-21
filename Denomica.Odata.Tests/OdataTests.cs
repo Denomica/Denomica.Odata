@@ -188,5 +188,23 @@ namespace Denomica.Odata.Tests
 
             var filter = parser.ParseFilter();
         }
+
+        [TestMethod]
+        [Description("Creates a URI parser that retrieves an employee by key.")]
+        public void CreateUriParser09()
+        {
+            var parser = new EdmModelBuilder()
+                .AddEntity<Person>()
+                .AddEntity<Employee>()
+                .CreateUriParser("https://api.company.com/employees('007')");
+            Assert.IsNotNull(parser);
+
+            var keySegment = parser.GetKeySegment();
+            Assert.IsNotNull(keySegment);
+
+            var key = keySegment.Keys.Single();
+            Assert.AreEqual("id", key.Key);
+            Assert.AreEqual("007", key.Value);
+        }
     }
 }
