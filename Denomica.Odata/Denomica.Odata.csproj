@@ -18,8 +18,7 @@
 		<RepositoryUrl>https://github.com/Denomica/Denomica.Odata</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageReadmeFile>readme.md</PackageReadmeFile>
-		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-		<IncludeSymbols>true</IncludeSymbols>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<Title>Denomica.Odata</Title>
 		<Copyright>Copyright (c) 2025 Denomica Oy</Copyright>
