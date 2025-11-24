@@ -144,11 +144,10 @@ namespace Denomica.OData
         public IEdmModel Build()
         {
             var builder = new ODataModelBuilder();
+            this.RegisterEnumTypes(builder);
 
-
-            foreach (var t in this.EntityTypes.Keys)
+            foreach (var et in this.EntityTypes.Values)
             {
-                var et = this.EntityTypes[t];
                 var typeConfig = this.AddEntityType(builder, et);
                 if(et.EntitySet?.Length > 0)
                 {
@@ -157,6 +156,13 @@ namespace Denomica.OData
             }
 
             return builder.GetEdmModel();
+        }
+
+
+
+        private static Type UnwrapNullable(Type t)
+        {
+            return Nullable.GetUnderlyingType(t) ?? t;
         }
 
 
@@ -174,7 +180,7 @@ namespace Denomica.OData
                 config.BaseType = baseConfig;
             }
 
-            this.AddEntityProperties(builder, config, entityTypeDef.EntityType);
+            this.AddEntityProperties(config, entityTypeDef.EntityType);
 
             if(null != entityTypeDef)
             {
@@ -199,32 +205,49 @@ namespace Denomica.OData
             return config;
         }
 
-        private IEnumerable<PropertyConfiguration> AddEntityProperties(ODataModelBuilder builder, EntityTypeConfiguration entityConfig, Type entityType)
+        private IEnumerable<PropertyConfiguration> AddEntityProperties(EntityTypeConfiguration entityConfig, Type entityType)
         {
             var configs = new List<PropertyConfiguration>();
             var flags = BindingFlags.Public | BindingFlags.Instance;
-            if(null != entityConfig.BaseType)
+            if (null != entityConfig.BaseType)
             {
                 flags |= BindingFlags.DeclaredOnly;
             }
 
-            var simpleProps = from x in entityType.GetProperties(flags)
-                              where
-                                    (!x.PropertyType.IsClass || x.PropertyType == typeof(string))
-                                    && !x.PropertyType.IsArray
-                                    && !x.PropertyType.IsEnum
-                              select x;
-            foreach(var p in simpleProps)
+            var simpleProps =
+                from x in entityType.GetProperties(flags)
+                let pt = UnwrapNullable(x.PropertyType)
+                where
+                    (!pt.IsClass || pt == typeof(string) || pt.IsEnum)
+                    && !pt.IsArray
+                select x;
+
+            foreach (var p in simpleProps)
             {
-                var propertyConfig = entityConfig.AddProperty(p);
+                var pt = UnwrapNullable(p.PropertyType);
+
+                PropertyConfiguration propertyConfig;
+                if (pt.IsEnum)
+                {
+                    // enum -> enum property
+                    propertyConfig = entityConfig.AddEnumProperty(p);
+                }
+                else
+                {
+                    // everything else in this set -> primitive property
+                    propertyConfig = entityConfig.AddProperty(p);
+                }
+
                 propertyConfig.Name = this.ModifyPropertyName(p.Name);
                 configs.Add(propertyConfig);
             }
 
-            var complexProps = from x in entityType.GetProperties(flags)
-                               where this.EntityTypes.Keys.Contains(x.PropertyType)
-                               select x;
-            foreach(var p in complexProps)
+            var complexProps =
+                from x in entityType.GetProperties(flags)
+                where this.EntityTypes.Keys.Contains(x.PropertyType)
+                select x;
+
+            foreach (var p in complexProps)
             {
                 var propertyConfig = entityConfig.AddNavigationProperty(p, EdmMultiplicity.ZeroOrOne);
                 propertyConfig.Name = this.ModifyPropertyName(p.Name);
@@ -281,6 +304,27 @@ namespace Denomica.OData
             return name;
         }
 
+        private void RegisterEnumTypes(ODataModelBuilder builder)
+        {
+            var enumTypes =
+                this.EntityTypes.Keys
+                    .SelectMany(t => t.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                    .Select(p => Nullable.GetUnderlyingType(p.PropertyType) ?? p.PropertyType)
+                    .Where(t => t.IsEnum)
+                    .Distinct();
+
+            foreach (var enumType in enumTypes)
+            {
+                // Register enum type in the EDM
+                var enumConfig = builder.AddEnumType(enumType);
+
+                // Populate members (non-convention builders do NOT do this for you)
+                foreach (var value in Enum.GetValues(enumType))
+                {
+                    enumConfig.AddMember((Enum)value);
+                }
+            }
+        }
 
         private class EntityTypeDefinition
         {

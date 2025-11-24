@@ -49,6 +49,23 @@ namespace Denomica.Odata.Tests
                 .Build();
         }
 
+        [TestMethod]
+        public void BuildModel04()
+        {
+            var model = new EdmModelBuilder()
+                .AddEntity<ContentItem>()
+                .Build();
+
+            var ciElement = (EdmEntityType)model.SchemaElements.First(x => x.Name == nameof(ContentItem));
+
+            string[] properties = ["id", "title", "body", "status"];
+            foreach(var p in properties)
+            {
+                var prop = ciElement.DeclaredProperties.FirstOrDefault(x => x.Name == p);
+                Assert.IsNotNull(prop, $"The property '{p}' must be contained in the defined model.");
+            }
+        }
+
 
 
         [TestMethod]

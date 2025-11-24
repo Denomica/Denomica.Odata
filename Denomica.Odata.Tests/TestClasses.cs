@@ -7,6 +7,12 @@ using System.Threading.Tasks;
 
 namespace Denomica.Odata.Tests
 {
+    public enum ContentStatus
+    {
+        Draft = 0,
+        Published = 1,
+        Archived = -1
+    }
 
     public class Person
     {
@@ -30,5 +36,17 @@ namespace Denomica.Odata.Tests
         public Employee? Manager { get; set; }
 
         public Person? EmergencyContact { get; set; }
+    }
+
+    public class ContentItem
+    {
+        [Key]
+        public virtual string Id { get; set; } = Guid.NewGuid().ToString();
+
+        public string Title { get; set; } = string.Empty;
+
+        public string? Body { get; set; }
+
+        public ContentStatus Status { get; set; } = ContentStatus.Draft;
     }
 }

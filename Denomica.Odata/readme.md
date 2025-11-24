@@ -14,6 +14,10 @@ Please refer to the [project repository](https://github.com/Denomica/Denomica.Od
 
 ## Version History
 
+### v1.0.2-beta.1
+
+Added support for entity models that expose enum properties.
+
 ### v1.0.1
 
 Fixed typing errors on this readme file.

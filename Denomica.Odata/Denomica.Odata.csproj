@@ -7,7 +7,7 @@
 
 		<!-- NuGet Package Properties -->
 		<PackageId>$(AssemblyName)</PackageId>
-		<Version>1.0.1</Version>
+		<Version>1.0.2-beta.1</Version>
 		<Authors>Mika Berglund</Authors>
 		<Company>Denomica Oy</Company>
 		<Product>$(AssemblyName)</Product>
@@ -22,6 +22,7 @@
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<Title>Denomica.Odata</Title>
 		<Copyright>Copyright (c) 2025 Denomica Oy</Copyright>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup>
