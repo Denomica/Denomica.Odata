@@ -223,5 +223,17 @@ namespace Denomica.Odata.Tests
             Assert.AreEqual("id", key.Key);
             Assert.AreEqual("007", key.Value);
         }
+
+        [TestMethod]
+        public void CreateUriParser10()
+        {
+            var parser = new EdmModelBuilder()
+                .AddEntity<ContentItem>()
+                .CreateUriParser("https://api.company.com/contentitems?$filter=status eq -1");
+
+            Assert.IsNotNull(parser);
+
+            var filter = parser.ParseFilter();
+        }
     }
 }
