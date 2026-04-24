@@ -235,5 +235,16 @@ namespace Denomica.Odata.Tests
 
             var filter = parser.ParseFilter();
         }
+
+        [TestMethod]
+        public void CreateUriParser11()
+        {
+            var parser = new EdmModelBuilder()
+                .AddEntity<Employee>()
+                .CreateUriParser("https://api.company.com/employees?$filter=hireDate in (2026-01-01, 2026-01-02)");
+
+            var filter = parser.ParseFilter();
+            Assert.AreEqual(typeof(InNode), filter.Expression.GetType());
+        }
     }
 }
