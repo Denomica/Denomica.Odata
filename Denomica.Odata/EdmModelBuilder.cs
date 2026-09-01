@@ -144,6 +144,7 @@ namespace Denomica.OData
         public IEdmModel Build()
         {
             var builder = new ODataModelBuilder();
+            this.RegisterNestedEntityTypes();
             this.RegisterEnumTypes(builder);
 
             foreach (var et in this.EntityTypes.Values)
@@ -244,7 +245,8 @@ namespace Denomica.OData
 
             var complexProps =
                 from x in entityType.GetProperties(flags)
-                where this.EntityTypes.Keys.Contains(x.PropertyType)
+                let pt = UnwrapNullable(x.PropertyType)
+                where this.EntityTypes.Keys.Contains(pt)
                 select x;
 
             foreach (var p in complexProps)
@@ -257,12 +259,12 @@ namespace Denomica.OData
             return configs;
         }
 
-        private EntityTypeDefinition CreateEntityTypeDefinition(Type entityType)
+        private EntityTypeDefinition CreateEntityTypeDefinition(Type entityType, bool addDefaultEntitySet = true)
         {
             var et = new EntityTypeDefinition
             {
                 EntityType = entityType,
-                EntitySet = entityType.Name.Pluralize().ToLower()
+                EntitySet = addDefaultEntitySet ? entityType.Name.Pluralize().ToLower() : null
             };
 
             return et;
@@ -276,6 +278,32 @@ namespace Denomica.OData
             }
 
             return this.EntityTypes[entityType];
+        }
+
+        private void RegisterNestedEntityTypes()
+        {
+            var typesToInspect = this.EntityTypes.Keys.ToList();
+
+            for (var index = 0; index < typesToInspect.Count; index++)
+            {
+                var entityType = typesToInspect[index];
+                var flags = BindingFlags.Public | BindingFlags.Instance;
+
+                foreach (var property in entityType.GetProperties(flags))
+                {
+                    var propertyType = UnwrapNullable(property.PropertyType);
+                    if (!propertyType.IsClass || propertyType == typeof(string) || propertyType.IsArray)
+                    {
+                        continue;
+                    }
+
+                    if (!this.EntityTypes.ContainsKey(propertyType))
+                    {
+                        this.EntityTypes[propertyType] = this.CreateEntityTypeDefinition(propertyType, addDefaultEntitySet: false);
+                        typesToInspect.Add(propertyType);
+                    }
+                }
+            }
         }
 
         private EntityTypeDefinition GetEntityTypeDefinitionOrCreateDefault(Type entityType)
@@ -330,7 +358,7 @@ namespace Denomica.OData
         {
             public Type EntityType { get; set; } = null!;
 
-            public string EntitySet { get; set; } = null!;
+            public string? EntitySet { get; set; }
 
             public List<string> KeyProperties { get; set; } = new List<string>();
 

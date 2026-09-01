@@ -14,6 +14,14 @@ Please refer to the [project repository](https://github.com/Denomica/Denomica.Od
 
 ## Version History
 
+### v1.1.0
+
+Added support for:
+
+- Entity models that expose enum and nullable enum properties.
+- Automatic registration of nested reference types.
+- Nested OData property paths such as `dataSource/key`.
+
 ### v1.0.2-beta.1
 
 Added support for entity models that expose enum properties.

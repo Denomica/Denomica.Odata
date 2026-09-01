@@ -64,6 +64,55 @@ namespace Denomica.Odata.Tests
                 var prop = ciElement.DeclaredProperties.FirstOrDefault(x => x.Name == p);
                 Assert.IsNotNull(prop, $"The property '{p}' must be contained in the defined model.");
             }
+
+            var statusProperty = ciElement.FindProperty(nameof(ContentItem.Status).Camelize());
+            Assert.IsNotNull(statusProperty);
+            Assert.AreEqual(EdmTypeKind.Enum, statusProperty.Type.Definition.TypeKind);
+
+            var statusType = (IEdmEnumType)statusProperty.Type.Definition;
+            CollectionAssert.AreEquivalent(
+                new[] { nameof(ContentStatus.Draft), nameof(ContentStatus.Published), nameof(ContentStatus.Archived) },
+                statusType.Members.Select(x => x.Name).ToArray());
+        }
+
+        [TestMethod]
+        public void BuildModel07_RegistersNullableEnumProperties()
+        {
+            var model = new EdmModelBuilder()
+                .AddEntity<ContentItem>()
+                .Build();
+
+            var contentItemType = (EdmEntityType)model.FindDeclaredType(typeof(ContentItem).FullName);
+            var statusProperty = contentItemType.FindProperty(nameof(ContentItem.NullableStatus).Camelize());
+
+            Assert.IsNotNull(statusProperty);
+            Assert.AreEqual(EdmTypeKind.Enum, statusProperty.Type.Definition.TypeKind);
+            Assert.IsTrue(statusProperty.Type.IsNullable);
+        }
+
+        [TestMethod]
+        public void BuildModel05()
+        {
+            var model = new EdmModelBuilder()
+                .AddEntity<Employee>()
+                .Build();
+
+            var employeeType = (EdmEntityType)model.FindDeclaredType(typeof(Employee).FullName);
+            Assert.IsNotNull(employeeType);
+            Assert.IsNotNull(employeeType.FindProperty(nameof(Employee.Manager).Camelize()));
+            Assert.IsNotNull(employeeType.FindProperty(nameof(Employee.EmergencyContact).Camelize()));
+        }
+
+        [TestMethod]
+        public void BuildModel06_AutomaticallyRegistersNestedTypes()
+        {
+            var parser = new EdmModelBuilder()
+                .AddEntity<NestedDocument>()
+                .CreateUriParser("/nesteddocuments?$filter=dataSource/key eq 'ds1'");
+
+            var nestedType = parser.Model.FindDeclaredType(typeof(NestedDataSource).FullName);
+            Assert.IsNotNull(nestedType);
+            Assert.IsNotNull(parser.ParseFilter()?.Expression);
         }
 
 

@@ -48,5 +48,22 @@ namespace Denomica.Odata.Tests
         public string? Body { get; set; }
 
         public ContentStatus Status { get; set; } = ContentStatus.Draft;
+
+        public ContentStatus? NullableStatus { get; set; }
+    }
+
+    public class NestedDocument
+    {
+        [Key]
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+
+        public NestedDataSource DataSource { get; set; } = new NestedDataSource();
+    }
+
+    public class NestedDataSource
+    {
+        public string Key { get; set; } = string.Empty;
+
+        public string Type { get; set; } = string.Empty;
     }
 }
